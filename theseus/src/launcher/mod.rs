@@ -1,3 +1,5 @@
+//! Utilities for launching minecraft
+
 use crate::launcher::auth::provider::Credentials;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -9,6 +11,7 @@ pub mod download;
 pub mod java;
 pub mod meta;
 pub mod rules;
+pub mod profile;
 
 #[derive(Error, Debug)]
 pub enum LauncherError {
@@ -37,15 +40,25 @@ pub enum LauncherError {
     ParseError(String),
 }
 
+pub struct LaunchOptions<'a> {
+    pub root_dir: &'a Path,
+    pub assets_dir: &'a Path,
+    pub legacy_assets_dir: &'a Path,
+    pub game_dir: &'a Path,
+    pub natives_dir: &'a Path,
+    pub libraries_dir: &'a Path,
+    pub client_dir: &'a Path,
+}
+
 pub async fn launch_minecraft(
+    options: &LaunchOptions<'_>,
     version_name: &str,
-    root_dir: &Path,
     credentials: &Credentials,
 ) -> Result<(), LauncherError> {
     let manifest = meta::fetch_version_manifest().await.unwrap();
 
     let version = download::download_version_info(
-        &*root_dir.join("versions"),
+        &options.client_dir,
         manifest
             .versions
             .iter()
@@ -56,7 +69,7 @@ pub async fn launch_minecraft(
     )
     .await?;
 
-    download_minecraft(&version, root_dir).await?;
+    download_minecraft(options, &version).await?;
 
     let arguments = version.arguments.unwrap();
 
@@ -65,12 +78,11 @@ pub async fn launch_minecraft(
             arguments
                 .get(&meta::ArgumentType::Jvm)
                 .map(|x| x.as_slice()),
-            &*root_dir.join("natives").join(&version.id),
+            &*options.natives_dir.join(&version.id),
             &*args::get_class_paths(
-                &*root_dir.join("libraries"),
+                options.libraries_dir,
                 version.libraries.as_slice(),
-                &*root_dir
-                    .join("versions")
+                &*options.client_dir
                     .join(&version.id)
                     .join(format!("{}.jar", &version.id)),
             )?,
@@ -84,11 +96,11 @@ pub async fn launch_minecraft(
             credentials,
             &*version.id,
             &version.asset_index.id,
-            root_dir,
-            &*root_dir.join("assets"),
+            options.game_dir,
+            options.assets_dir,
             &version.type_,
         )?)
-        .current_dir(root_dir)
+        .current_dir(&options.root_dir)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()
@@ -106,27 +118,25 @@ pub async fn launch_minecraft(
 }
 
 pub async fn download_minecraft(
+    options: &LaunchOptions<'_>,
     version: &meta::VersionInfo,
-    root_dir: &Path,
 ) -> Result<(), LauncherError> {
-    let assets_index = download::download_assets_index(&*root_dir.join("assets"), &version).await?;
-
-    let legacy_dir = root_dir.join("resources");
+    let assets_index = download::download_assets_index(options.assets_dir, &version).await?;
 
     let (a, b, c) = futures::future::join3(
-        download::download_client(&*root_dir.join("versions"), &version),
+        download::download_client(options.client_dir, &version),
         download::download_assets(
-            &*root_dir.join("assets"),
+            options.assets_dir,
             if version.assets == "legacy" {
-                Some(legacy_dir.as_path())
+                Some(options.legacy_assets_dir)
             } else {
                 None
             },
             &assets_index,
         ),
         download::download_libraries(
-            &*root_dir.join("libraries"),
-            &*root_dir.join("natives").join(&version.id),
+            options.libraries_dir,
+            &*options.natives_dir.join(&version.id),
             version.libraries.as_slice(),
         ),
     )

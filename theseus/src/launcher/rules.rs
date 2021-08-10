@@ -2,10 +2,12 @@ use crate::launcher::download::get_os;
 use crate::launcher::meta::{OsRule, Rule, RuleAction};
 use regex::Regex;
 
+/// Returns a boolean expressing the outcome of the specified launcher rules
 pub fn parse_rules(rules: &[Rule]) -> bool {
     rules.iter().all(|x| parse_rule(x))
 }
 
+/// Returns a boolean expressing the outcome of the specified launcher rule
 pub fn parse_rule(rule: &Rule) -> bool {
     let result = if let Some(os) = &rule.os {
         parse_os_rule(os)
@@ -21,6 +23,7 @@ pub fn parse_rule(rule: &Rule) -> bool {
     }
 }
 
+/// Parses an OS rule to a boolean
 pub fn parse_os_rule(rule: &OsRule) -> bool {
     if let Some(arch) = &rule.arch {
         match arch.as_str() {

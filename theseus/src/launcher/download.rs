@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::Path;
 
+/// Downloads the version metadata from launcher meta if the version JSON does not exist on the disk yet
 pub async fn download_version_info(
     client_path: &Path,
     version: &Version,
@@ -32,6 +33,7 @@ pub async fn download_version_info(
     }
 }
 
+/// Saves the minecraft client and version metadata to the specified directory. If the minecraft client already exists, this function will not overwrite it.
 pub async fn download_client(
     client_path: &Path,
     version_info: &VersionInfo,
@@ -55,6 +57,7 @@ pub async fn download_client(
     Ok(())
 }
 
+/// Downloads the assets metadata from launcher meta if the version JSON does not exist on the disk yet.
 pub async fn download_assets_index(
     assets_path: &Path,
     version: &VersionInfo,
@@ -79,6 +82,7 @@ pub async fn download_assets_index(
     }
 }
 
+/// Saves the minecraft assets to the launcher compatible format. If `legacy_path` is specified, minecraft assets will be saved to that directory in the legacy format. If the files already exist, this function will not overwrite existing files.
 pub async fn download_assets(
     assets_path: &Path,
     legacy_path: Option<&Path>,
@@ -126,6 +130,7 @@ async fn download_asset(
     Ok(())
 }
 
+/// Saves the minecraft libraries and native libraries to the specified directories.
 pub async fn download_libraries(
     libraries_path: &Path,
     natives_path: &Path,
@@ -346,7 +351,7 @@ async fn get_hash(bytes: bytes::Bytes) -> Result<String, LauncherError> {
     Ok(hash)
 }
 
-pub fn get_os() -> Os {
+pub(crate) fn get_os() -> Os {
     match std::env::consts::OS {
         "windows" => Os::Windows,
         "macos" => Os::Osx,

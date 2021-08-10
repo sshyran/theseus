@@ -1,3 +1,5 @@
+//! Functions for parsing 
+
 use crate::launcher::auth::provider::Credentials;
 use crate::launcher::meta::{Argument, ArgumentValue, Library, Os, VersionType};
 use crate::launcher::rules::parse_rules;
@@ -5,6 +7,7 @@ use crate::launcher::LauncherError;
 use std::path::Path;
 use uuid::Uuid;
 
+/// Retrieves the class paths of the Minecraft libraries and clients in a formatted String for the classpath argument
 pub fn get_class_paths(
     libraries_path: &Path,
     libraries: &[Library],
@@ -83,6 +86,8 @@ pub fn get_class_paths(
     }))
 }
 
+/// Gets the JVM arguments to launch minecraft. If `arguments` is not specified, default JVM
+/// arguments are used
 pub fn get_jvm_arguments(
     arguments: Option<&[Argument]>,
     natives_path: &Path,
@@ -135,6 +140,7 @@ fn parse_jvm_argument(
         .replace("${classpath}", class_paths))
 }
 
+/// Gets the arguments passed to minecraft
 #[allow(clippy::too_many_arguments)]
 pub fn get_minecraft_arguments(
     arguments: Option<&[Argument]>,

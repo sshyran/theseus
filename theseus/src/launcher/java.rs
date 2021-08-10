@@ -7,6 +7,7 @@ lazy_static! {
     static ref JAVA_VERSION_REGEX: Regex = Regex::new(r#""(.*?)""#).unwrap();
 }
 
+/// Retrieves the Java version of the specified installation path
 pub fn check_java() -> Result<Option<String>, LauncherError> {
     let child = Command::new("java")
         .arg("-version")
